@@ -3,6 +3,8 @@
 
 #include "framework.h"
 #include "WindowsProject1.h"
+#include <stdlib.h>
+#include <time.h>
 
 #define MAX_LOADSTRING 100
 
@@ -121,64 +123,92 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
-int p_l, p_r, p_t, p_b, o_l, o_r, o_t, o_b;
 int p_legl, p_legr, p_legt, p_legb, o_legl, o_legr, o_legt, o_legb;
 int p_arml, p_armr, p_armt, p_armb, o_arml, o_armr, o_armt, o_armb;
+int mtime;
+RECT pbody, obody, pleg, oleg, parm, oarm;
+RECT health, ohealth, hit, ohit;
 WPARAM wparam;
-BOOL g, h, w, up, two, three;
+BOOL g, h, w, up, two, three, ai;
 
-DWORD WINAPI punch(LPVOID param) {
+//캐릭터 모양, 메뉴
+
+DWORD WINAPI punch(LPVOID param) {  
     HWND hWnd = (HWND)param;
-    int armr;
+    parm.right += 100;
     HDC hdc;
     hdc = GetDC(hWnd);
-    armr = p_armr + 100;
-    Rectangle(hdc, p_arml, p_armt, armr, p_armb);
+    InvalidateRect(hWnd, &parm, true);
+    if (IntersectRect(&ohit, &parm, &obody)) {
+        ohealth.left += rand() % 100;
+        if (ohealth.left >= 1400){
+            KillTimer(hWnd, 1);
+            MessageBox(hWnd, L"1P 승리", L"게임 끝", MB_OK); 
+        }
+    }
     Sleep(90);
+    parm.right -= 100;
     InvalidateRect(hWnd, NULL, true);
-    Rectangle(hdc, p_arml, p_armt, p_armr, p_armb);
     ReleaseDC(hWnd, hdc);
     ExitThread(0);
     return 0;
 }
 DWORD WINAPI kick(LPVOID param) {
     HWND hWnd = (HWND)param;
-    int legr;
     HDC hdc;
     hdc = GetDC(hWnd);
-    legr = p_legr + 180;
-    Rectangle(hdc, p_legl, p_legt, legr, p_legb);
+    pleg.right += 180;
+    InvalidateRect(hWnd, &pleg, true);
+    if (IntersectRect(&ohit, &pleg, &oleg)) {
+        ohealth.left += rand() % 70;
+        if (ohealth.left >= 1400) {
+            KillTimer(hWnd, 1);
+            MessageBox(hWnd, L"1P 승리", L"게임 끝", MB_OK);
+        }
+    }
     Sleep(90);
+    pleg.right -= 180;
     InvalidateRect(hWnd, NULL, true);
-    Rectangle(hdc, p_legl, p_legt, p_legr, p_legb);
     ReleaseDC(hWnd, hdc);
     ExitThread(0);
     return 0;
 }
 DWORD WINAPI opunch(LPVOID param) {
     HWND hWnd = (HWND)param;
-    int arml;
     HDC hdc;
     hdc = GetDC(hWnd);
-    arml = o_arml - 100;
-    Rectangle(hdc, arml, o_armt, o_armr, o_armb);
+    oarm.left -= 100;
+    InvalidateRect(hWnd, &oarm, true);
+    if (IntersectRect(&hit, &oarm, &pbody)) {
+        health.right -= rand() % 100;
+        if (health.right <= 10) {
+            KillTimer(hWnd, 1);
+            MessageBox(hWnd, L"2P 승리", L"게임 끝", MB_OK);
+        }  
+    }
     Sleep(90);
+    oarm.left += 100;
     InvalidateRect(hWnd, NULL, true);
-    Rectangle(hdc, o_arml, o_armt, o_armr, o_armb);
     ReleaseDC(hWnd, hdc);
     ExitThread(0);
     return 0;
 }
 DWORD WINAPI okick(LPVOID param) {
     HWND hWnd = (HWND)param;
-    int legl;
     HDC hdc;
     hdc = GetDC(hWnd);
-    legl = o_legl - 180;
-    Rectangle(hdc, legl, o_legt, o_legr, o_legb);
+    oleg.left -= 180;
+    InvalidateRect(hWnd, &oleg, true);
+    if (IntersectRect(&hit, &oleg, &pleg)) {
+        health.right -= rand() % 70;
+        if (health.right <= 10) {
+            KillTimer(hWnd, 1);
+            MessageBox(hWnd, L"2P 승리", L"게임 끝", MB_OK);
+        }
+    }
     Sleep(90);
+    oleg.left += 180;
     InvalidateRect(hWnd, NULL, true);
-    Rectangle(hdc, o_legl, o_legt, o_legr, o_legb);
     ReleaseDC(hWnd, hdc);
     ExitThread(0);
     return 0;
@@ -204,45 +234,114 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            case solo:
+                SetTimer(hWnd, 1, mtime, NULL);
+                break;
+            case duo:
+                KillTimer(hWnd, 1);
+                break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
         }
         break;
-    case WM_CREATE:
+    case WM_TIMER:
     {
 
+        if (wParam == 1) {
+            int x = rand() % 4 + 1;
+            if (x == 1) {
+                mtime = rand() % 50;
+                KillTimer(hWnd, 1);
+                SetTimer(hWnd, 1, mtime, NULL);
+                if (obody.left > pbody.right) {
+                    obody.left -= 25;
+                    obody.right -= 25;
+                    oarm.left -= 25;
+                    oarm.right -= 25;
+                    oleg.left -= 25;
+                    oleg.right -= 25;
+                    InvalidateRect(hWnd, NULL, true);
+                }
+            }
+            else if (x == 2) {
+                mtime = rand() % 90;
+                KillTimer(hWnd, 1);
+                SetTimer(hWnd, 1, mtime, NULL);
+                if (obody.left > pbody.right && obody.right < 1400) {
+                    obody.left += 25;
+                    obody.right += 25;
+                    oarm.left += 25;
+                    oarm.right += 25;
+                    oleg.left += 25;
+                    oleg.right += 25;
+                    InvalidateRect(hWnd, NULL, true);
+                }
+            }
+            else if (x == 3) {
+                mtime = rand() % 90 + 90;
+                KillTimer(hWnd, 1);
+                SetTimer(hWnd, 1, mtime, NULL);
+                DWORD tid = 0;
+                if(obody.left < pbody.right + 70)
+                hdl[idx++] = CreateThread(NULL, 0, opunch, hWnd, 0, &tid);
+            }
+            else if (x == 4) {
+                mtime = rand() % 90 + 90;
+                KillTimer(hWnd, 1);
+                SetTimer(hWnd, 1, mtime, NULL);
+                DWORD tid = 0;
+                if (obody.left < pbody.right + 120)
+                hdl[idx++] = CreateThread(NULL, 0, okick, hWnd, 0, &tid);
+            }
+        }
+    }
+    break;
+    case WM_CREATE:
+    {
+        srand((unsigned int)time(NULL));
 
-        p_t = 220;
-        p_l = 10;
-        p_r = 110;
-        p_b = 450;
+        health.left = 10;
+        health.top = 10;
+        health.right = 640;
+        health.bottom = 35;
 
-        p_armt = p_t + 30;
-        p_armb = p_b - 50;
-        p_arml = p_l + 30;
-        p_armr = p_r - 30;
+        ohealth.left = 770;
+        ohealth.top = 10;
+        ohealth.right = 1400;
+        ohealth.bottom = 35;
 
-        p_legt = p_b;
-        p_legb = p_legt + 250;
-        p_legl = p_l + 30;
-        p_legr = p_r - 30;
+        pbody.top = 220;
+        pbody.left = 10;
+        pbody.right = 110;
+        pbody.bottom = 450;
 
-        o_l = 1300;
-        o_t = 220;
-        o_r = 1400;
-        o_b = 450;
+        parm.top = pbody.top + 30;
+        parm.bottom = pbody.bottom - 50;
+        parm.left = pbody.left + 30;
+        parm.right = pbody.right - 30;
 
-        o_armt = o_t + 30;
-        o_armb = o_b - 50;
-        o_arml = o_l + 30;
-        o_armr = o_r - 30;
+        pleg.top = pbody.bottom;
+        pleg.bottom = pleg.top + 250;
+        pleg.left = pbody.left + 30;
+        pleg.right = pbody.right - 30;
 
-        o_legt = o_b;
-        o_legb = o_legt + 250;
-        o_legl = o_l + 30;
-        o_legr = o_r - 30;
+        obody.left = 1300;
+        obody.top = 220;
+        obody.right = 1400;
+        obody.bottom = 450;
 
+        oarm.top = obody.top + 30;
+        oarm.bottom = obody.bottom - 50;
+        oarm.left = obody.left + 30;
+        oarm.right = obody.right - 30;
+
+        oleg.top = obody.bottom;
+        oleg.bottom = oleg.top + 250;
+        oleg.left = obody.left + 30;
+        oleg.right = obody.right - 30;
+
+        
 
     }
     break;
@@ -253,39 +352,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             // 왼쪽 방향키 입력
         case VK_LEFT:
-            o_l -= 25;
-            o_r -= 25;
-            o_arml -= 25;
-            o_armr -= 25;
-            o_legl -= 25;
-            o_legr -= 25;
+            obody.left -= 25;
+            obody.right -= 25;
+            oarm.left -= 25;
+            oarm.right -= 25;
+            oleg.left -= 25;
+            oleg.right -= 25;
             break;
             // 오른쪽 방향키 입력
         case VK_RIGHT:
-            o_l += 25;
-            o_r += 25;
-            o_arml += 25;
-            o_armr += 25;
-            o_legl += 25;
-            o_legr += 25;
+            obody.left += 25;
+            obody.right += 25;
+            oarm.left += 25;
+            oarm.right += 25;
+            oleg.left += 25;
+            oleg.right += 25;
             break;
-        case 0x41:
-            p_l -= 25;
-            p_r -= 25;
-            p_arml -= 25;
-            p_armr -= 25;
-            p_legl -= 25;
-            p_legr -= 25;
+        case 0x41: //a
+            pbody.left -= 25;
+            pbody.right -= 25;
+            parm.left -= 25;
+            parm.right -= 25;
+            pleg.left -= 25;
+            pleg.right -= 25;
             break;
-        case 0x44:
-            p_l += 25;
-            p_r += 25;
-            p_arml += 25;
-            p_armr += 25;
-            p_legl += 25;
-            p_legr += 25;
+        case 0x44: //d
+            pbody.left += 25;
+            pbody.right += 25;
+            parm.left += 25;
+            parm.right += 25;
+            pleg.left += 25;
+            pleg.right += 25;
             break;
-        case 0x47:
+        case 0x47: //g
         {     
                 DWORD tid = 0;
                 wparam = wParam;
@@ -295,7 +394,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 g = true;
         }
             break;
-        case 0x48:
+        case 0x48: //h
         {
             DWORD tid = 0;
             wparam = wParam;
@@ -305,7 +404,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             h = true;
         }
             break;
-        case 0x62:
+        case 0x62: //2
         {     
                 DWORD tid = 0;
                 wparam = wParam;
@@ -315,7 +414,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 two = true;
         }
         break;
-        case 0x63:
+        case 0x63: //3
         {
             DWORD tid = 0;
             wparam = wParam;
@@ -341,57 +440,57 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         */
     
         // 그라운드 범위 확인 및 좌표 재설정
-        if (p_l < 10)
+        if (pbody.left < 10)
         {
-            p_l = 10;
-            p_r = 110;
-            p_arml = p_l + 30;
-            p_armr = p_r - 30;
-            p_legl = p_l + 30;
-            p_legr = p_r - 30;
+            pbody.left = 10;
+            pbody.right = 110;
+            parm.left = pbody.left + 30;
+            parm.right = pbody.right - 30;
+            pleg.left = pbody.left + 30;
+            pleg.right = pbody.right - 30;
         }
 
-        if (p_r > 1400)
+        if (pbody.right > 1400)
         {
-            p_l = 1300;
-            p_r = 1400;
-            p_arml = p_l + 30;
-            p_armr = p_r - 30;
-            p_legl = p_l + 30;
-            p_legr = p_r - 30;
+            pbody.left = 1300;
+            pbody.right = 1400;
+            parm.left = pbody.left + 30;
+            parm.right = pbody.right - 30;
+            pleg.left = pbody.left + 30;
+            pleg.right = pbody.right - 30;
         }
-        if (o_l < 10)
+        if (obody.left < 10)
         {
-            o_l = 10;
-            o_r = 110;
-            o_arml = o_l + 30;
-            o_armr = o_r - 30;
-            o_legl = o_l + 30;
-            o_legr = o_r - 30;
+            obody.left = 10;
+            obody.right = 110;
+            oarm.left = obody.left + 30;
+            oarm.right = obody.right - 30;
+            oleg.left = obody.left + 30;
+            oleg.right = obody.right - 30;
         }
 
-        if (o_r > 1400)
+        if (obody.right > 1400)
         {
-            o_l = 1300;
-            o_r = 1400;
-            o_arml = o_l + 30;
-            o_armr = o_r - 30;
-            o_legl = o_l + 30;
-            o_legr = o_r - 30;
+            obody.left = 1300;
+            obody.right = 1400;
+            oarm.left = obody.left + 30;
+            oarm.right = obody.right - 30;
+            oleg.left = obody.left + 30;
+            oleg.right = obody.right - 30;
         }
-        if (p_r > o_l)
+        if (pbody.right > obody.left)
         {
-            p_r = o_l;
-            p_l = p_r - 100;
-            o_r = o_l + 100;
-            p_arml = p_l + 30;
-            p_armr = p_r - 30;
-            p_legl = p_l + 30;
-            p_legr = p_r - 30;
-            o_arml = o_l + 30;
-            o_armr = o_r - 30;
-            o_legl = o_l + 30;
-            o_legr = o_r - 30;
+            pbody.right = obody.left;
+            pbody.left = pbody.right - 100;
+            obody.right = obody.left + 100;
+            parm.left = pbody.left + 30;
+            parm.right = pbody.right - 30;
+            pleg.left = pbody.left + 30;
+            pleg.right = pbody.right - 30;
+            oarm.left = obody.left + 30;
+            oarm.right = obody.right - 30;
+            oleg.left = obody.left + 30;
+            oleg.right = obody.right - 30;
         }
 
 
@@ -417,35 +516,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
             break;
         }
-    case 0x62:
-    {
-        two = false;
-    }
-    break;
-    case 0x63:
-    {
-        three = false;
-    }
-    break;
-    case 0x57: 
-    {
-        w = false;
-    }
-    break;
+        case 0x62:
+        {
+            two = false;
+        }
+        break;
+        case 0x63:
+        {
+            three = false;
+        }
+        break;
+        case 0x57: 
+        {
+            w = false;
+        }
+        break;
     }
     break;
         
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
+            HDC hMemDC;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            Rectangle(hdc, p_l, p_t, p_r, p_b);
-            Rectangle(hdc, o_l, o_t, o_r, o_b);
-            Rectangle(hdc, p_legl, p_legt, p_legr, p_legb);
-            Rectangle(hdc, p_arml, p_armt, p_armr, p_armb);
-            Rectangle(hdc, o_legl, o_legt, o_legr, o_legb);
-            Rectangle(hdc, o_arml, o_armt, o_armr, o_armb);
+            //HBITMAP img, hImg;
+            //BITMAP bit;
+            //int x, y;
+            //hMemDC = CreateCompatibleDC(hdc);
+            //img = (HBITMAP)LoadImage(NULL, L"stand2.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+            //hImg = (HBITMAP)SelectObject(hMemDC, img);
+            //GetObject(hImg, sizeof(BITMAP), &bit);
+            //x = bit.bmWidth;
+            //y = bit.bmHeight;
+            //BitBlt(hdc, pbody.left, pbody.top, x, y, hMemDC, 0, 0, SRCCOPY);
+            Rectangle(hdc, health.left, health.top, health.right, health.bottom);
+            Rectangle(hdc, ohealth.left, ohealth.top, ohealth.right, ohealth.bottom);
+            Rectangle(hdc, pbody.left, pbody.top, pbody.right, pbody.bottom);
+            Rectangle(hdc, obody.left, obody.top, obody.right, obody.bottom);
+            Rectangle(hdc, pleg.left, pleg.top, pleg.right, pleg.bottom);
+            Rectangle(hdc, parm.left, parm.top, parm.right, parm.bottom);
+            Rectangle(hdc, oleg.left, oleg.top, oleg.right, oleg.bottom);
+            Rectangle(hdc, oarm.left, oarm.top, oarm.right, oarm.bottom);
+            //SelectObject(hMemDC, hImg);
+            //DeleteObject(img);
+            //DeleteDC(hMemDC);
             EndPaint(hWnd, &ps);
         }
         break;
