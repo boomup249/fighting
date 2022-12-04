@@ -123,8 +123,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
-int p_legl, p_legr, p_legt, p_legb, o_legl, o_legr, o_legt, o_legb;
-int p_arml, p_armr, p_armt, p_armb, o_arml, o_armr, o_armt, o_armb;
 int mtime;
 RECT pbody, obody, pleg, oleg, parm, oarm;
 RECT health, ohealth, hit, ohit;
